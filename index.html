@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="uz" class="select-none">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="referrer" content="no-referrer">
+<title>JahonFutboli Futbol Testlari</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+tailwind.config={theme:{extend:{colors:{jf:{red:'#E50914',darkRed:'#B80710',bgGray:'#F8F9FA',cardBorder:'#E9ECEF',textDark:'#111827'}},boxShadow:{'ios-red':'0 10px 25px -5px rgba(229,9,20,.4)'}}}}
+</script>
+<style>
+*{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent}
+img{-webkit-user-drag:none;pointer-events:none}
+body{font-family:'Inter',-apple-system,sans-serif;background:#0b0f17;overflow-x:hidden}
+.active-bounce:active{transform:scale(.97)}
+.timer-circle{transition:stroke-dashoffset .1s linear,stroke .3s}
+/* Chop etish / PDF ga saqlashni bloklash */
+@media print{html,body{display:none!important}}
+/* Suv belgisi: skrinshotdan kim olgani aniq bo'ladi */
+#wm{position:absolute;inset:0;z-index:40;pointer-events:none;overflow:hidden;display:none}
+#wm span{position:absolute;left:-20%;width:140%;transform:rotate(-24deg);text-align:center;font-weight:800;font-size:13px;letter-spacing:2px;color:rgba(0,0,0,.09);white-space:nowrap}
+</style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-0 sm:p-4">
+
+<main id="appWrapper" class="w-full max-w-md h-[100vh] sm:h-[840px] bg-white sm:rounded-[36px] overflow-hidden border-0 sm:border-8 border-slate-900 flex flex-col relative shadow-2xl">
+
+<!-- Suv belgisi -->
+<div id="wm"></div>
+
+<!-- Test boshlanishidan oldingi ogohlantirish -->
+<div id="consentModal" class="hidden absolute inset-0 z-50 flex items-center justify-center p-5 bg-slate-950/85">
+  <div class="w-full bg-white rounded-3xl p-5 text-left shadow-2xl">
+    <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl mb-3"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <h3 class="text-lg font-black text-center mb-1">DIQQAT!</h3>
+    <p class="text-[11px] text-gray-500 text-center mb-3">Testni boshlashdan oldin qoidalar bilan tanishing:</p>
+    <ul class="space-y-2 text-xs font-semibold text-gray-700 mb-4">
+      <li class="flex gap-2"><i class="fa-solid fa-door-open text-jf-red mt-0.5"></i><span>Testdan, Telegramdan yoki ilovadan chiqsangiz, <b>test avtomatik yakunlanadi</b>.</span></li>
+      <li class="flex gap-2"><i class="fa-solid fa-circle-xmark text-jf-red mt-0.5"></i><span>Javob berilmagan savollar <b>noto'g'ri</b> hisoblanadi.</span></li>
+      <li class="flex gap-2"><i class="fa-solid fa-stopwatch text-jf-red mt-0.5"></i><span>Har savolga <b>15 soniya</b>, faqat <b>1 marta</b> urinish beriladi.</span></li>
+      <li class="flex gap-2"><i class="fa-solid fa-camera text-jf-red mt-0.5"></i><span>Test tugagach natijani <b>screenshot qilib botga yuborasiz</b>.</span></li>
+    </ul>
+    <button onclick="confirmStart()" class="w-full bg-jf-red text-white font-extrabold py-3.5 rounded-2xl text-sm shadow-ios-red active-bounce">ROZIMAN, BOSHLASH</button>
+    <button onclick="closeConsent()" class="w-full mt-2 text-gray-500 font-bold py-2 text-xs active-bounce">Bekor qilish</button>
+  </div>
+</div>
+
+<!-- Test tugagandan keyingi menyu -->
+<div id="endModal" class="hidden absolute inset-0 z-50 flex items-center justify-center p-5 bg-slate-950/85">
+  <div class="w-full bg-white rounded-3xl p-5 text-center shadow-2xl">
+    <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl mb-3"><i class="fa-solid fa-camera"></i></div>
+    <h3 class="text-lg font-black mb-1">TEST YAKUNLANDI</h3>
+    <p id="endLeftNote" class="hidden text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 rounded-xl p-2 mb-2">Telegramdan chiqqaningiz uchun test avtomatik yakunlandi.</p>
+    <p class="text-xs text-gray-600 leading-relaxed mb-4">Natija ekranini <b>screenshot qiling</b> va <b>botga yuboring</b>. Screenshotda ismingiz, ID raqamingiz va natija ko'rinib turishi kerak.</p>
+    <button onclick="closeEnd()" class="w-full bg-jf-red text-white font-extrabold py-3.5 rounded-2xl text-sm shadow-ios-red active-bounce">TUSHUNARLI</button>
+  </div>
+</div>
+
+<header class="bg-white border-b border-gray-100 px-4 py-3.5 flex items-center justify-between flex-shrink-0">
+  <div class="flex items-center space-x-3">
+    <div class="w-10 h-10 rounded-xl overflow-hidden border border-gray-200 bg-red-600 flex items-center justify-center">
+      <img src="https://i.ibb.co/C57RNJ4f/jonim-JF.jpg" alt="JF" referrerpolicy="no-referrer" crossorigin="anonymous" onerror="this.style.display='none';document.getElementById('fallbackLogo').classList.remove('hidden')" class="w-full h-full object-cover">
+      <span id="fallbackLogo" class="hidden text-white font-black text-xs">JF</span>
+    </div>
+    <div>
+      <h1 class="text-sm font-extrabold text-jf-textDark flex items-center gap-1.5">JF FOOTBALL QUIZ <i class="fa-solid fa-circle-check text-jf-red text-xs"></i></h1>
+      <p class="text-[10px] text-gray-500 font-medium">Rasmiy Bilim Sinov Platformasi</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-1.5 bg-gray-100 border border-gray-200 px-2.5 py-1 rounded-full">
+    <i class="fa-solid fa-user text-gray-500 text-[10px]"></i>
+    <span id="tgUsername" class="text-[11px] font-bold text-gray-700 max-w-[80px] truncate">Mehmon</span>
+  </div>
+</header>
+
+<div id="mainView" class="flex-1 bg-jf-bgGray overflow-y-auto p-4 relative">
+
+<!-- 1. KIRISH -->
+<section id="welcomeScreen" class="flex flex-col h-full justify-between py-2">
+  <div>
+    <div class="w-full bg-gradient-to-br from-jf-red via-red-600 to-jf-darkRed text-white rounded-3xl p-6 shadow-ios-red relative overflow-hidden mb-4">
+      <div class="absolute -right-6 -bottom-6 opacity-15 text-8xl"><i class="fa-solid fa-trophy"></i></div>
+      <p class="text-xs font-bold uppercase tracking-widest text-red-100/90 mb-1">Bosh Sovrin</p>
+      <h2 class="text-3xl font-black leading-none mb-2">25,000 SO'M</h2>
+      <p class="text-xs text-red-100/90 font-medium leading-relaxed">Barcha savolga 100% to'g'ri javob bering va mukofotni qo'lga kiriting!</p>
+    </div>
+    <div class="space-y-2.5 text-left">
+      <div class="bg-white border border-jf-cardBorder p-3.5 rounded-2xl flex items-center space-x-3.5"><div class="w-9 h-9 rounded-xl bg-red-50 text-jf-red flex items-center justify-center"><i class="fa-solid fa-stopwatch"></i></div><div><h4 class="text-xs font-bold">Har savolga 15 soniya</h4><p class="text-[11px] text-gray-500">Savollar va variantlar har o'yinchida aralash keladi.</p></div></div>
+      <div class="bg-white border border-jf-cardBorder p-3.5 rounded-2xl flex items-center space-x-3.5"><div class="w-9 h-9 rounded-xl bg-red-50 text-jf-red flex items-center justify-center"><i class="fa-solid fa-1"></i></div><div><h4 class="text-xs font-bold">Faqat 1 marta urinish</h4><p class="text-[11px] text-gray-500">Yangi savollar qo'shilgunча qayta topshirib bo'lmaydi.</p></div></div>
+      <div class="bg-white border border-jf-cardBorder p-3.5 rounded-2xl flex items-center space-x-3.5"><div class="w-9 h-9 rounded-xl bg-red-50 text-jf-red flex items-center justify-center"><i class="fa-solid fa-user-shield"></i></div><div><h4 class="text-xs font-bold">Xavfsizlik himoyasi</h4><p class="text-[11px] text-gray-500">Telegramdan chiqsangiz test avtomatik tugaydi.</p></div></div>
+      <div class="bg-amber-50 border border-amber-200 p-3.5 rounded-2xl flex items-start space-x-3.5"><div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-triangle-exclamation"></i></div><div><h4 class="text-xs font-bold text-amber-900">Muhim ogohlantirish</h4><p class="text-[11px] text-amber-800 leading-relaxed">Test boshlangach ilovadan chiqmang va boshqa oynaga o'tmang: test avtomatik yakunlanadi, javobsiz savollar xato hisoblanadi. Test tugagach natijani screenshot qilib botga yuboring.</p></div></div>
+    </div>
+  </div>
+  <button id="startBtn" disabled onclick="openConsent()" class="mt-4 w-full bg-jf-red disabled:opacity-50 text-white font-extrabold py-4 rounded-2xl shadow-ios-red active-bounce text-sm tracking-wide">
+    <span id="startBtnText">YUKLANMOQDA...</span>
+  </button>
+</section>
+
+<!-- 2. TEST -->
+<section id="quizScreen" class="hidden flex flex-col h-full justify-between">
+  <div>
+    <div class="bg-white border border-jf-cardBorder rounded-2xl p-3 mb-4 flex items-center justify-between">
+      <div>
+        <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Joriy Savol</p>
+        <p class="text-base font-black"><span id="currentQNum" class="text-jf-red">1</span> <span class="text-gray-300">/</span> <span id="totalQNum">25</span></p>
+      </div>
+      <div class="relative w-12 h-12 flex items-center justify-center">
+        <svg class="w-12 h-12 -rotate-90"><circle cx="24" cy="24" r="20" stroke="#F1F5F9" stroke-width="4" fill="transparent"/><circle id="timerCircle" class="timer-circle" cx="24" cy="24" r="20" stroke="#E50914" stroke-width="4" fill="transparent" stroke-dasharray="125.6" stroke-dashoffset="0" stroke-linecap="round"/></svg>
+        <span id="timeLeft" class="absolute font-black text-xs">15</span>
+      </div>
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-1.5 mb-4 overflow-hidden"><div id="progressBar" class="bg-jf-red h-1.5 rounded-full transition-all duration-300" style="width:4%"></div></div>
+    <div class="bg-white border border-jf-cardBorder rounded-2xl p-5 min-h-[130px] flex items-center justify-center text-center mb-4 relative overflow-hidden">
+      <div class="absolute top-0 left-0 w-1 h-full bg-jf-red"></div>
+      <h3 id="questionText" class="text-sm sm:text-base font-bold leading-relaxed"></h3>
+    </div>
+    <div id="optionsContainer" class="space-y-2.5"></div>
+  </div>
+  <div id="feedbackToast" class="hidden my-2 p-3.5 rounded-2xl text-xs font-extrabold text-center flex items-center justify-center space-x-2"><span id="toastIcon"></span><span id="toastText"></span></div>
+</section>
+
+<!-- 3. NATIJA -->
+<section id="resultScreen" class="hidden flex flex-col h-full justify-between py-2 text-center">
+  <div class="flex flex-col items-center">
+    <div id="resultIconBox" class="w-20 h-20 rounded-3xl flex items-center justify-center text-3xl mb-3 border-2"></div>
+    <h2 id="resultTitle" class="text-2xl font-black">Natija Tayyor!</h2>
+    <p id="resultSub" class="text-xs text-gray-500 mt-1 px-4"></p>
+    <div class="w-full bg-white border border-jf-cardBorder rounded-2xl p-4 my-4 space-y-3">
+      <div class="grid grid-cols-3 divide-x divide-gray-100">
+        <div><p class="text-[10px] text-gray-400 uppercase font-bold">To'g'ri</p><p id="correctCount" class="text-xl font-black text-emerald-600">0</p></div>
+        <div><p class="text-[10px] text-gray-400 uppercase font-bold">Noto'g'ri</p><p id="wrongCount" class="text-xl font-black text-red-600">0</p></div>
+        <div><p class="text-[10px] text-gray-400 uppercase font-bold">Aniqlik</p><p id="accuracyPercent" class="text-xl font-black text-blue-600">0%</p></div>
+      </div>
+      <div id="rewardBanner" class="hidden bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-left"><p class="font-extrabold text-sm text-emerald-800">TABRIKLAYMIZ! 🎉</p><p class="text-[11px] text-emerald-700">100% natija! Mukofot uchun natijani botga yuboring.</p></div>
+      <div id="failBanner" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-left"><p class="font-bold text-red-800">Mukofot berilmadi</p><p class="text-[11px] text-red-700">Mukofot uchun barcha savolga xatosiz javob berish lozim.</p></div>
+    </div>
+  </div>
+  <div class="space-y-2 pt-2">
+    <div id="shotCard" class="bg-white border border-jf-cardBorder rounded-2xl p-3 text-left text-[11px] space-y-1">
+      <div class="flex justify-between"><span class="text-gray-400 font-bold uppercase">Ism</span><span id="shotName" class="font-extrabold text-jf-textDark"></span></div>
+      <div class="flex justify-between"><span class="text-gray-400 font-bold uppercase">Telegram ID</span><span id="shotId" class="font-extrabold text-jf-textDark"></span></div>
+      <div class="flex justify-between"><span class="text-gray-400 font-bold uppercase">Sana</span><span id="shotDate" class="font-extrabold text-jf-textDark"></span></div>
+    </div>
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] font-bold text-amber-900 leading-relaxed">📸 Shu ekranni screenshot qiling va botga yuboring.</div>
+    
+    <p class="text-[11px] text-gray-400">Yangi savollar qo'shilganda qayta urinish ochiladi.</p>
+  </div>
+</section>
+
+</div>
+</main>
+
+<script>
+/* ============ SOZLAMALAR ============ */
+// Savollarni kodsiz boshqarish uchun Google Sheets "Publish to web" (CSV) havolasini shu yerga qo'ying.
+// Bo'sh qoldirilsa, quyidagi ichki 25 ta savol ishlatiladi.
+const SHEET_CSV_URL = "";
+// true: bitta qurilmada test faqat 1 marta topshiriladi. false: cheksiz (sinash uchun).
+// Qayta ochish: sahifa manziliga ?reset=1 qo'shing.
+const ONE_ATTEMPT = true;
+const QUESTIONS_PER_GAME = 25;
+const TIME_PER_Q = 15;
+const REVEAL_MS = 3000;
+
+/* Ichki savollar: [savol, TO'G'RI javob, xato1, xato2, xato3]  (tartib keyin aralashtiriladi) */
+const BUILTIN = [
+["Birinchi Oltin to'p (Ballon d'Or) mukofoti 1956-yilda kimga topshirilgan?", "Stanley Matthews", "Alfredo Di Stéfano", "Raymond Kopa", "Lev Yashin"],
+["1966-yilgi JCh finalida hat-trick urgan futbolchi kim?", "Geoff Hurst", "Bobby Charlton", "Martin Peters", "Helmut Haller"],
+["1986-yilgi JCh chorak finalida Maradona \"Xudoning qo'li\" golini qaysi jamoaga urgan?", "Angliya", "Belgiya", "Germaniya FR", "Italiya"],
+["Bitta JCh turnirida eng ko'p gol (13 ta) urgan futbolchi kim?", "Just Fontaine", "Gerd Müller", "Ronaldo Nazário", "Sándor Kocsis"],
+["2005-yil Istanbul finalida Liverpool tanaffusda 0:3 hisobda yutqazib, qaysi jamoani penaltilarda yengdi?", "Milan", "Juventus", "Barcelona", "Real Madrid"],
+["Premyer-liganing bitta mavsumida eng ko'p gol (36 ta) urgan futbolchi kim?", "Erling Haaland", "Mohamed Salah", "Alan Shearer", "Cristiano Ronaldo"],
+["JCh tarixidagi eng tez gol (taxminan 11-soniya) muallifi kim?", "Hakan Şükür", "Clint Dempsey", "Václav Mašek", "Bryan Robson"],
+["JCh tarixida eng ko'p o'yin (26 ta) o'tkazgan futbolchi kim?", "Lionel Messi", "Lothar Matthäus", "Miroslav Klose", "Paolo Maldini"],
+["Jarima maydonchasidagi penalti nuqtasi darvoza chizig'idan necha metr uzoqlikda?", "11 metr", "9 metr", "10 metr", "12 metr"],
+["1930-yilgi birinchi JChda nechta yevropa jamoasi qatnashgan?", "4 ta", "8 ta", "2 ta", "6 ta"],
+["JChda gol urgan eng yosh futbolchi (17 yosh) kim?", "Pelé", "Michael Owen", "Kylian Mbappé", "Lamine Yamal"],
+["1999-yilgi Chempionlar Ligasi finalida Manchester United Bayernni qanday hisobda yengdi?", "2:1", "3:1", "1:0", "2:0"],
+["2022-yilgi JChda eng yaxshi darvozabon (Oltin qo'lqop) kim deb topilgan?", "Emiliano Martínez", "Hugo Lloris", "Yassine Bounou", "Dominik Livaković"],
+["1998-yilgi JCh finalida Fransiya Braziliyani qanday hisobda mag'lub etgan?", "3:0", "2:1", "3:1", "2:0"],
+["Quyidagi holatlarning qaysi birida ofsayd belgilanmaydi?", "Autdan to'pni to'g'ridan-to'g'ri olganda", "Erkin zarbadan to'pni olganda", "Shtangadan qaytgan to'pni olganda", "Himoyachidan tasodifan qaytgan to'pni olganda"],
+["Chempionlar Ligasi nomi bilan o'tkazilgan birinchi mavsum (1992/93) g'olibi kim?", "Marseille", "Milan", "Barcelona", "Ajax"],
+["Yevropa chempionatini (EURO) eng ko'p marta yutgan jamoa qaysi?", "Ispaniya", "Germaniya", "Italiya", "Fransiya"],
+["Cristiano Ronaldo Real Madrid safida jami nechta gol urgan?", "450 ta", "420 ta", "480 ta", "395 ta"],
+["2024-yilgi Oltin to'p (Ballon d'Or) sovrindori kim?", "Rodri", "Vinícius Júnior", "Jude Bellingham", "Lamine Yamal"],
+["JCh finalida uch marta o'ynab, birortasida ham yutolmagan jamoa qaysi?", "Niderlandiya", "Chexoslovakiya", "Vengriya", "Shvetsiya"],
+["1970-yilgi JCh finalida Braziliya Italiyani qanday hisobda yengdi?", "4:1", "3:1", "2:1", "3:0"],
+["JCh finalida hat-trick urgan ikkinchi futbolchi (Hurstdan keyin) kim?", "Kylian Mbappé", "Lionel Messi", "Zinedine Zidane", "Ronaldo Nazário"],
+["2015/16 mavsumda Leicester City Premyer-ligani yutganda uning bosh murabbiyi kim edi?", "Claudio Ranieri", "Brendan Rodgers", "Nigel Pearson", "Roberto Martínez"],
+["O'zbekiston terma jamoasining Osiyo Kubogidagi eng yaxshi natijasi qaysi?", "4-o'rin (2011)", "Finalchi", "3-o'rin", "Chorak final"],
+["2026-yilgi JChda nechta jamoa ishtirok etadi?", "48 ta", "32 ta", "40 ta", "64 ta"]
+];
+
+/* ============ TELEGRAM ============ */
+const tg = window.Telegram?.WebApp;
+let tgUser = { id: 0, first_name: "Foydalanuvchi", username: "" };
+if (tg) {
+  tg.ready(); tg.expand();
+  try { tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch(e){}
+  try { tg.enableClosingConfirmation && tg.enableClosingConfirmation(); } catch(e){}
+  if (tg.initDataUnsafe?.user) {
+    tgUser = tg.initDataUnsafe.user;
+    document.getElementById('tgUsername').innerText = tgUser.first_name || tgUser.username;
+  }
+  // Ilova fonga ketganda (ilovalar almashinuvi, skrinshot menyusi ba'zan) yopish
+  try { tg.onEvent('deactivated', () => coverNow()); } catch(e){}
+}
+
+/* ============ HOLAT ============ */
+let POOL = [], VERSION = "", activeQuestions = [], currentIndex = 0, score = 0;
+let finishedAt = 0, nextTimer = null, timerInterval = null, timeRemaining = TIME_PER_Q, isAnswerLocked = false, inQuiz = false;
+const $ = id => document.getElementById(id);
+
+/* ============ SAVOLLARNI YUKLASH ============ */
+function parseCSV(text) {
+  const rows = []; let row = [], cur = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i+1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cur); cur = ""; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i+1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ""; }
+    else cur += c;
+  }
+  if (cur || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+async function loadQuestions() {
+  if (SHEET_CSV_URL) {
+    try {
+      const r = await fetch(SHEET_CSV_URL, { cache: "no-store" });
+      const rows = parseCSV(await r.text()).slice(1)              // 1-qator: sarlavha
+        .map(x => x.map(s => s.trim()))
+        .filter(x => x.length >= 5 && x.slice(0, 5).every(Boolean));
+      if (rows.length >= 4) return rows;
+    } catch (e) { console.warn("Sheet yuklanmadi, ichki savollar ishlatiladi"); }
+  }
+  return BUILTIN;
+}
+function hashStr(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+
+/* ============ 1 MARTA URINISH (savollar to'plami o'zgarsa avtomatik ochiladi) ============ */
+const doneKey = () => "jf_done_" + VERSION;
+function storeGet(key, cb) {
+  let local = null; try { local = localStorage.getItem(key); } catch(e){}
+  if (tg?.CloudStorage && tg.isVersionAtLeast && tg.isVersionAtLeast('6.9')) {
+    let called = false; const fin = v => { if (!called) { called = true; cb(v || local); } };
+    try { tg.CloudStorage.getItem(key, (err, v) => fin(err ? null : v)); setTimeout(() => fin(null), 2500); } catch(e){ fin(null); }
+  } else cb(local);
+}
+function storeSet(key, val) {
+  if (!ONE_ATTEMPT) return;
+  try { localStorage.setItem(key, val); } catch(e){}
+  try { if (tg?.CloudStorage && tg.isVersionAtLeast('6.9')) tg.CloudStorage.setItem(key, val); } catch(e){}
+}
+
+async function init() {
+  POOL = await loadQuestions();
+  VERSION = hashStr(POOL.map(x => x.join("|")).join("#"));
+  if (/[?&]reset=1/.test(location.search)) {
+    try { localStorage.removeItem(doneKey()); } catch(e){}
+    try { tg?.CloudStorage?.removeItem(doneKey()); } catch(e){}
+  }
+  if (!ONE_ATTEMPT) { $('startBtn').disabled = false; $('startBtnText').innerText = "TESTNI BOSHLASH ➜"; return; }
+  storeGet(doneKey(), v => {
+    if (v) {
+      let d = {}; try { d = JSON.parse(v); } catch(e){}
+      activeQuestions = { length: d.total || QUESTIONS_PER_GAME };
+      score = d.score || 0; finishedAt = d.finished || 0;
+      showResult(true);
+    } else {
+      $('startBtn').disabled = false;
+      $('startBtnText').innerText = "TESTNI BOSHLASH ➜";
+    }
+  });
+}
+
+/* ============ XAVFSIZLIK ============ */
+document.addEventListener('contextmenu', e => e.preventDefault());
+['copy','cut','dragstart','selectstart'].forEach(ev => document.addEventListener(ev, e => e.preventDefault()));
+document.addEventListener('keydown', e => {
+  if (!inQuiz) return;   // natija ekranida screenshot olish mumkin
+  if (e.ctrlKey || e.metaKey || e.key === 'PrintScreen' || e.keyCode === 123 || e.key === 'Meta') {
+    e.preventDefault(); coverNow();
+    try { navigator.clipboard.writeText(" "); } catch(e){}   // PrintScreen buferini tozalash
+  }
+});
+document.addEventListener('keyup', e => { if (inQuiz && e.key === 'PrintScreen') { coverNow(); try { navigator.clipboard.writeText(" "); } catch(e){} } });
+document.addEventListener('visibilitychange', () => { if (document.hidden) coverNow(); });
+window.addEventListener('pagehide', coverNow);
+// Telefonda ko'p barmoqli bosish / uzoq bosish (skrinshot jestlari) paytida yopish
+document.addEventListener('touchstart', e => { if (e.touches.length > 2) coverNow(); }, { passive: true });
+
+// Telegramdan / ilovadan chiqilsa test avtomatik yakunlanadi
+function coverNow() {
+  if (!inQuiz) return;
+  clearInterval(timerInterval); clearTimeout(nextTimer);
+  isAnswerLocked = true;
+  finishQuiz(true);
+  $('resultSub').innerText = "Telegramdan chiqqaningiz uchun test avtomatik yakunlandi. Javob berilmagan savollar noto'g'ri hisoblandi.";
+}
+function openConsent() { if (!$('startBtn').disabled) $('consentModal').classList.remove('hidden'); }
+function closeConsent() { $('consentModal').classList.add('hidden'); }
+function confirmStart() { closeConsent(); startQuiz(); }
+function showEndModal(left) {
+  $('endLeftNote').classList.toggle('hidden', !left);
+  $('endModal').classList.remove('hidden');
+}
+function closeEnd() { $('endModal').classList.add('hidden'); }
+
+function buildWatermark() {
+  const wm = $('wm'); wm.innerHTML = ""; wm.style.display = "block";
+  const tag = `ID ${tgUser.id || '-'} • ${tgUser.username || tgUser.first_name}`;
+  for (let i = 0; i < 14; i++) {
+    const s = document.createElement('span');
+    s.style.top = (i * 8 - 4) + "%";
+    s.innerText = (tag + "   ").repeat(6);
+    wm.appendChild(s);
+  }
+}
+
+/* ============ O'YIN ============ */
+function shuffle(a) { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+function startQuiz() { beginQuiz(); }
+function beginQuiz() {
+  // Boshlanishi bilan "topshirildi" deb belgilanadi — yopib qayta kirish yordam bermaydi
+  storeSet(doneKey(), JSON.stringify({ score: 0, total: Math.min(QUESTIONS_PER_GAME, POOL.length), started: Date.now() }));
+
+  activeQuestions = shuffle(POOL).slice(0, QUESTIONS_PER_GAME).map(r => {
+    const opts = shuffle([{ t: r[1], ok: true }, { t: r[2] }, { t: r[3] }, { t: r[4] }]);
+    return { q: r[0], options: opts.map(o => o.t), correctAnswer: opts.findIndex(o => o.ok) };
+  });
+  currentIndex = 0; score = 0; inQuiz = true;
+  buildWatermark();
+  $('welcomeScreen').classList.add('hidden');
+  $('resultScreen').classList.add('hidden');
+  $('quizScreen').classList.remove('hidden');
+  renderCurrentQuestion();
+}
+
+function renderCurrentQuestion() {
+  isAnswerLocked = false;
+  $('feedbackToast').classList.add('hidden');
+  const d = activeQuestions[currentIndex];
+  $('currentQNum').innerText = currentIndex + 1;
+  $('totalQNum').innerText = activeQuestions.length;
+  $('progressBar').style.width = ((currentIndex + 1) / activeQuestions.length * 100) + "%";
+  $('questionText').innerText = d.q;
+  const c = $('optionsContainer'); c.innerHTML = "";
+  d.options.forEach((t, i) => {
+    const b = document.createElement('button');
+    b.className = "option-btn w-full bg-white border border-jf-cardBorder p-3.5 rounded-2xl flex items-center justify-between text-left shadow-sm active-bounce text-xs font-bold text-jf-textDark";
+    b.onclick = () => selectOption(i);
+    const wrap = document.createElement('div'); wrap.className = "flex items-center space-x-3";
+    const badge = document.createElement('span'); badge.className = "w-7 h-7 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center font-black text-[11px] label-badge flex-shrink-0"; badge.innerText = "ABCD"[i];
+    const txt = document.createElement('span'); txt.className = "leading-tight"; txt.innerText = t;   // innerText: XSS yo'q
+    wrap.append(badge, txt);
+    const ic = document.createElement('i'); ic.className = "fa-solid fa-circle icon-indicator text-gray-300 text-xs flex-shrink-0";
+    b.append(wrap, ic); c.appendChild(b);
+  });
+  timeRemaining = TIME_PER_Q;
+  runTimer();
+}
+
+function runTimer() {
+  clearInterval(timerInterval);
+  const circle = $('timerCircle'), txt = $('timeLeft'), max = 125.6;
+  const paint = () => {
+    txt.innerText = timeRemaining;
+    circle.style.strokeDashoffset = max - (timeRemaining / TIME_PER_Q) * max;
+    circle.style.stroke = timeRemaining <= 5 ? "#EF4444" : "#E50914";
+  };
+  paint();
+  timerInterval = setInterval(() => {
+    timeRemaining--; paint();
+    if (timeRemaining <= 0) { clearInterval(timerInterval); handleTimeOut(); }
+  }, 1000);
+}
+
+function handleTimeOut() {
+  if (isAnswerLocked) return;
+  isAnswerLocked = true;
+  showFeedback(false, "VAQT TUGADI!");
+  lockButtons(-1);
+  nextTimer = setTimeout(nextQuestion, REVEAL_MS);
+}
+
+function selectOption(i) {
+  if (isAnswerLocked) return;
+  isAnswerLocked = true; clearInterval(timerInterval);
+  const ok = i === activeQuestions[currentIndex].correctAnswer;
+  if (ok) score++;
+  storeSet(doneKey(), JSON.stringify({ score, total: activeQuestions.length, answered: currentIndex + 1 }));
+  showFeedback(ok, ok ? "TO'G'RI JAVOB!" : "NOTO'G'RI JAVOB!");
+  lockButtons(i, ok);
+  nextTimer = setTimeout(nextQuestion, REVEAL_MS);
+}
+
+// Muhim: xato bo'lsa TO'G'RI javob ko'rsatilmaydi — skrinshot bilan savol kaliti tarqalmasin
+function lockButtons(sel, ok) {
+  $('optionsContainer').querySelectorAll('.option-btn').forEach((btn, idx) => {
+    btn.disabled = true;
+    const icon = btn.querySelector('.icon-indicator'), badge = btn.querySelector('.label-badge');
+    if (idx === sel) {
+      const g = ok;
+      btn.className = `w-full ${g ? 'bg-emerald-50 border-emerald-500 text-emerald-900' : 'bg-red-50 border-red-500 text-red-900'} border-2 p-3.5 rounded-2xl flex items-center justify-between text-left text-xs font-bold`;
+      badge.className = `w-7 h-7 rounded-xl ${g ? 'bg-emerald-500' : 'bg-red-500'} text-white flex items-center justify-center font-black text-[11px] flex-shrink-0`;
+      icon.className = `fa-solid ${g ? 'fa-circle-check text-emerald-600' : 'fa-circle-xmark text-red-600'} text-base flex-shrink-0`;
+    } else btn.style.opacity = "0.5";
+  });
+}
+
+function showFeedback(ok, msg) {
+  const t = $('feedbackToast');
+  t.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-800', 'bg-red-100', 'text-red-800');
+  t.classList.add(...(ok ? ['bg-emerald-100', 'text-emerald-800'] : ['bg-red-100', 'text-red-800']));
+  $('toastIcon').innerHTML = ok ? '<i class="fa-solid fa-circle-check text-emerald-600"></i>' : '<i class="fa-solid fa-triangle-exclamation text-red-600"></i>';
+  $('toastText').innerText = msg;
+}
+
+function nextQuestion() {
+  currentIndex++;
+  currentIndex < activeQuestions.length ? renderCurrentQuestion() : finishQuiz();
+}
+
+function finishQuiz(left = false) {
+  clearInterval(timerInterval); inQuiz = false;
+  $('wm').style.display = "none";
+  finishedAt = Date.now();
+  storeSet(doneKey(), JSON.stringify({ score, total: activeQuestions.length, finished: finishedAt }));
+  showResult(false);
+  showEndModal(left);
+}
+
+function showResult(alreadyPlayed) {
+  inQuiz = false;
+  ['welcomeScreen', 'quizScreen'].forEach(x => $(x).classList.add('hidden'));
+  $('resultScreen').classList.remove('hidden');
+  const total = activeQuestions.length, wrong = total - score, acc = Math.round(score / total * 100), perfect = score === total;
+  $('correctCount').innerText = score; $('wrongCount').innerText = wrong; $('accuracyPercent').innerText = acc + "%";
+  const box = $('resultIconBox');
+  if (perfect) {
+    $('resultTitle').innerText = "MUKAMMAL NATIJA!";
+    $('resultSub').innerText = "Siz barcha savolga xatosiz javob berdingiz!";
+    box.className = "w-20 h-20 bg-emerald-100 border-emerald-500 rounded-3xl flex items-center justify-center text-3xl mb-3 text-emerald-600 border-2";
+    box.innerHTML = '<i class="fa-solid fa-crown"></i>';
+  } else {
+    $('resultTitle').innerText = acc >= 70 ? "Yaxshi Natija!" : "Muvaffaqiyatsiz Sinov";
+    $('resultSub').innerText = acc >= 70 ? "Barakalla, lekin bosh mukofot uchun 100% kerak!" : "Keyingi safar albatta o'xshaydi!";
+    box.className = "w-20 h-20 bg-red-100 border-red-500 rounded-3xl flex items-center justify-center text-3xl mb-3 text-red-600 border-2";
+    box.innerHTML = '<i class="fa-solid fa-trophy"></i>';
+  }
+  $('shotName').innerText = tgUser.first_name || tgUser.username || "—";
+  $('shotId').innerText = tgUser.id || "—";
+  const dt = finishedAt ? new Date(finishedAt) : null, p = n => String(n).padStart(2, "0");
+  $('shotDate').innerText = dt ? `${p(dt.getDate())}.${p(dt.getMonth() + 1)}.${dt.getFullYear()} ${p(dt.getHours())}:${p(dt.getMinutes())}` : "—";
+  $('rewardBanner').classList.toggle('hidden', !perfect);
+  $('failBanner').classList.toggle('hidden', perfect);
+  if (alreadyPlayed) {
+    $('resultSub').innerText = "Siz bu testni allaqachon topshirgansiz. Yangi savollar qo'shilganda qayta urinish ochiladi.";
+  }
+}
+
+function sendDataToTelegramBot() {
+  const payload = {
+    user_id: tgUser.id,
+    username: tgUser.username || tgUser.first_name,
+    score, total: activeQuestions.length,
+    won_prize: score === activeQuestions.length,
+    quiz_version: VERSION
+  };
+  if (tg) tg.sendData(JSON.stringify(payload));
+  else alert(JSON.stringify(payload, null, 2));
+}
+
+init();
+</script>
+</body>
+</html>
